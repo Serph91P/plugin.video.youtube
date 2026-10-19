@@ -1,0 +1,177 @@
+name: Propose upstream release update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * *'
+
+permissions: {}
+
+concurrency:
+  group: upstream-release-update-master
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'Serph91P/plugin.video.youtube'
+    name: Find stable upstream release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      release_sha: ${{ steps.release.outputs.release_sha }}
+    steps:
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh api repos/anxdpanic/plugin.video.youtube/releases/latest --jq 'select(.draft == false and .prerelease == false) | .tag_name')"
+          if [ -z "$tag" ]; then
+            echo 'No stable upstream release found.'
+            exit 0
+          fi
+          git check-ref-format "refs/tags/$tag"
+          git init --bare "$RUNNER_TEMP/upstream-release.git"
+          git -C "$RUNNER_TEMP/upstream-release.git" fetch --no-tags https://github.com/anxdpanic/plugin.video.youtube.git "refs/tags/$tag:refs/tags/release"
+          release_sha="$(git -C "$RUNNER_TEMP/upstream-release.git" rev-parse 'refs/tags/release^{commit}')"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release_sha=$release_sha" >> "$GITHUB_OUTPUT"
+
+  candidate:
+    name: Merge and test candidate without write credentials
+    needs: release
+    if: needs.release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      ready: ${{ steps.candidate.outputs.ready }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+      - id: candidate
+        env:
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+          RELEASE_SHA: ${{ needs.release.outputs.release_sha }}
+        run: |
+          # Independent release job pins the peeled commit before candidate code runs.
+          git fetch --no-tags https://github.com/anxdpanic/plugin.video.youtube.git "$RELEASE_SHA"
+          python3 .scripts/upstream_release_update.py candidate \
+            --repo . --target master --release-sha "$RELEASE_SHA" --release-tag "$RELEASE_TAG" \
+            --output candidate.json
+          status="$(python3 -c 'import json; print(json.load(open("candidate.json"))["status"])')"
+          if [ "$status" = integrated ]; then
+            echo 'Release commit is already contained in master.'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$status" != ready ]; then
+            echo "::error::Unable to prepare update candidate ($status); master was not changed."
+            exit 1
+          fi
+          candidate_sha="$(python3 -c 'import json; print(json.load(open("candidate.json"))["candidate_sha"])')"
+          candidate_branch="$(python3 -c 'import json; print(json.load(open("candidate.json"))["branch"])')"
+          python3 -m unittest discover -s tests -v
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+          for path in Path('resources/lib').rglob('*.py'):
+              ast.parse(path.read_bytes(), filename=str(path))
+          PY
+          python3 .scripts/upstream_release_update.py bundle --repo . --branch "$candidate_branch" \
+            --candidate-sha "$candidate_sha" --output release-candidate.bundle
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+      - if: steps.candidate.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: upstream-release-candidate
+          path: |
+            candidate.json
+            release-candidate.bundle
+          retention-days: 7
+
+  pull-request:
+    name: Push tested candidate and open update PR
+    needs: [release, candidate]
+    if: needs.candidate.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: master
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: upstream-release-candidate
+      - id: metadata
+        env:
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+          VERIFIED_RELEASE_SHA: ${{ needs.release.outputs.release_sha }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import importlib.util
+          import json
+          import os
+          import re
+
+          spec = importlib.util.spec_from_file_location('update', '.scripts/upstream_release_update.py')
+          update = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(update)
+          candidate = json.load(open('candidate.json', encoding='utf-8'))
+          release_sha = candidate.get('release_sha', '')
+          candidate_sha = candidate.get('candidate_sha', '')
+          if not re.fullmatch(r'[0-9a-f]{40}', release_sha) or not re.fullmatch(r'[0-9a-f]{40}', candidate_sha):
+              raise SystemExit('candidate artifact has invalid commit identifiers')
+          if release_sha != os.environ['VERIFIED_RELEASE_SHA']:
+              raise SystemExit('candidate artifact does not match independently pinned release commit')
+          if candidate.get('branch') != update.update_branch(os.environ['RELEASE_TAG'], release_sha):
+              raise SystemExit('candidate artifact branch does not match the stable release')
+          print(f'branch={candidate["branch"]}')
+          print(f'release_sha={release_sha}')
+          print(f'candidate_sha={candidate_sha}')
+          PY
+      - name: Verify candidate as git data only, including reconstructed merge tree
+        env:
+          RELEASE_SHA: ${{ steps.metadata.outputs.release_sha }}
+          CANDIDATE_SHA: ${{ steps.metadata.outputs.candidate_sha }}
+        run: |
+          git fetch ./release-candidate.bundle "$CANDIDATE_SHA":refs/automation/candidate
+          python3 .scripts/upstream_release_update.py verify \
+            --repo . --target master --release-sha "$RELEASE_SHA" --candidate-sha "$CANDIDATE_SHA"
+      - id: duplicate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.metadata.outputs.branch }}
+        run: |
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --base master --head "$BRANCH" --state open --json number --jq 'length')"
+          echo "existing=$existing" >> "$GITHUB_OUTPUT"
+      - if: steps.duplicate.outputs.existing == '0'
+        env:
+          BRANCH: ${{ steps.metadata.outputs.branch }}
+          CANDIDATE_SHA: ${{ steps.metadata.outputs.candidate_sha }}
+        run: |
+          git branch "$BRANCH" "$CANDIDATE_SHA"
+          git push origin "$BRANCH"
+      - if: steps.duplicate.outputs.existing == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.metadata.outputs.branch }}
+          RELEASE_SHA: ${{ steps.metadata.outputs.release_sha }}
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          gh pr create --repo "$GITHUB_REPOSITORY" --base master --head "$BRANCH" \
+            --title "Merge upstream release ${RELEASE_TAG}" \
+            --body "Automated proposal for upstream stable release \`${RELEASE_TAG}\`.
+
+          Exact upstream release commit: \`${RELEASE_SHA}\`
+
+          Read-only candidate tests: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          Review and merge manually; this workflow never auto-merges, releases, or deploys."
