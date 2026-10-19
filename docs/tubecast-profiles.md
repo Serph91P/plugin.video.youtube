@@ -59,3 +59,17 @@ set Kodi's displayed profile to the other account, pair each phone in turn,
 play/stop/advance/reconnect and check the actual YouTube histories on both
 accounts. Also test cancellation, deleted/signed-out profiles and reset. A new
 account on an already paired phone requires resetting its pairing first.
+
+## Repository packaging (not yet activated)
+
+The fork-owned jobs in `Add-on Validations` test both profile routing and the
+publication contract, then use the pinned shared packager for `addon.xml` and
+`resources/`. After a successful completed `master` run, the separate notifier
+can forward the immutable evidence to the Kodi repository. Pull-request packages
+are test artifacts only; they can never dispatch a public repository update.
+
+[Repository integration and activation gates](https://github.com/Serph91P/repository.serph91p/blob/feat/tubecast-youtube-distribution/addon-publication/YOUTUBE.md)
+track the native LibreELEC test, dispatch-secret provisioning, initial version
+selection and first-publication bootstrap. A merge onto `master` can publish once
+the dispatch secret is configured, so keep this as a draft until publication is
+explicitly approved. No release tag or upstream submission token is required.

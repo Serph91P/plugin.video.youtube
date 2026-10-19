@@ -4,6 +4,8 @@ on:
   push:
     branches: [ master, main ]
 
+  workflow_dispatch:
+
   pull_request:
     branches: [ master, main ]
 
@@ -39,3 +41,33 @@ jobs:
         id: kodi-addon-checker-nexus
         run: |
           kodi-addon-checker ${{ github.event.repository.name }} --branch=nexus
+
+  fork-tests:
+    if: >-
+      github.repository == 'Serph91P/plugin.video.youtube' &&
+      (github.event_name == 'pull_request' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML==6.0.3
+      - run: python -m unittest discover -s tests -v
+      - run: python -m unittest discover -s .github/tests -v
+
+  fork-package:
+    needs: fork-tests
+    if: github.repository == 'Serph91P/plugin.video.youtube'
+    permissions:
+      contents: read
+      id-token: write
+    uses: Serph91P/repository.serph91p/.github/workflows/reusable-addon-package.yml@6ed69ffc333f07664a9f9b52bc16a92812a939f1
+    with:
+      addon_id: plugin.video.youtube
+      runtime_entries_json: '["addon.xml", "resources/"]'
