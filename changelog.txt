@@ -1,3 +1,10 @@
+## v7.4.4.1
+### New
+- Pair TubeCast phones with existing signed-in YouTube profiles for playback and history without changing the globally selected profile.
+
+### Fixed
+- Exclude Android VR adaptive streams while retaining VR authentication and remote history reporting.
+
 ## v7.4.4
 ### Fixed
 - Fix not including FolderPath in current container details #1467
