@@ -74,6 +74,22 @@ class PlaybackBoundaryTests(unittest.TestCase):
         self.assertEqual(selected.get_uuid(), 'profile-one')
         self.assertEqual(self.context.get_uuid(), 'profile-zero')
 
+    def test_gui_play_after_cast_uses_global_profile(self):
+        self.context.params = {'video_id': 'synthetic', 'cast_device': PHONE_A}
+        cast_provider = Mock()
+        cast_provider.get_client.side_effect = RuntimeError('client boundary')
+        with self.assertRaisesRegex(RuntimeError, 'client boundary'):
+            self.play._play_stream(cast_provider, self.context)
+        self.assertEqual(cast_provider.get_client.call_args.args[0].get_uuid(), 'profile-one')
+
+        self.context.params = {'video_id': 'synthetic-gui'}
+        gui_provider = Mock()
+        gui_provider.get_client.side_effect = RuntimeError('client boundary')
+        with self.assertRaisesRegex(RuntimeError, 'client boundary'):
+            self.play._play_stream(gui_provider, self.context)
+        self.assertIs(gui_provider.get_client.call_args.args[0], self.context)
+        self.assertEqual(self.context.get_uuid(), 'profile-zero')
+
     def test_cancelled_pairing_never_creates_client(self):
         self.context.params = {'video_id': 'synthetic', 'cast_device': PHONE_A}
         self.context.ui.on_select.return_value = -1
