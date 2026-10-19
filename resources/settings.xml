@@ -633,6 +633,14 @@
                     <data>RunScript($ID,users/switch?refresh=True)</data>
                     <control format="action" type="button"/>
                 </setting>
+                <setting id="kodion.users.reset_cast" type="action" label="30991" help="30993">
+                    <level>0</level>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <data>RunScript($ID,users/reset_cast)</data>
+                    <control format="action" type="button"/>
+                </setting>
             </group>
         </category>
         <category id="advanced" label="10038" help="">

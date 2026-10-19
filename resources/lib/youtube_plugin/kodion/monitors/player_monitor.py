@@ -13,6 +13,7 @@ import json
 import threading
 
 from .. import logging
+from ..cast_profiles import CastProfileError, playback_profile
 from ..compatibility import xbmc
 from ..constants import (
     BUSY_FLAG,
@@ -458,9 +459,16 @@ class PlayerMonitor(xbmc.Player):
             self.current_time = 0.0
             self.total_time = 0.0
 
+        try:
+            provider, context = playback_profile(self._provider, self._context, player_data)
+        except CastProfileError:
+            # A removed/signed-out cast profile must never use the service user.
+            self.log.error('Cast profile unavailable; history reporting skipped')
+            return
+
         self.threads.append(PlayerMonitorThread(self,
-                                                self._provider,
-                                                self._context,
+                                                provider,
+                                                context,
                                                 self._monitor,
                                                 player_data))
 
