@@ -63,8 +63,8 @@ account on an already paired phone requires resetting its pairing first.
 ## Repository packaging (not yet activated)
 
 The fork-owned jobs in `Add-on Validations` test both profile routing and the
-publication contract, then use the pinned shared packager for `addon.xml` and
-`resources/`. After a successful completed `master` run, the separate notifier
+publication contract, then use the pinned shared packager for `addon.xml`,
+`changelog.txt`, `LICENSES/` and `resources/`. After a successful completed `master` run, the separate notifier
 can forward the immutable evidence to the Kodi repository. Pull-request packages
 are test artifacts only; they can never dispatch a public repository update.
 

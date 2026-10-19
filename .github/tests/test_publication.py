@@ -53,7 +53,7 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(package["with"]["addon_id"], "plugin.video.youtube")
         self.assertEqual(
             json.loads(package["with"]["runtime_entries_json"]),
-            ["addon.xml", "resources/"],
+            ["addon.xml", "changelog.txt", "LICENSES/", "resources/"],
         )
         self.assertEqual(
             package["permissions"], {"contents": "read", "id-token": "write"}

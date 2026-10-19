@@ -70,4 +70,4 @@ jobs:
     uses: Serph91P/repository.serph91p/.github/workflows/reusable-addon-package.yml@6ed69ffc333f07664a9f9b52bc16a92812a939f1
     with:
       addon_id: plugin.video.youtube
-      runtime_entries_json: '["addon.xml", "resources/"]'
+      runtime_entries_json: '["addon.xml", "changelog.txt", "LICENSES/", "resources/"]'
