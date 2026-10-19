@@ -17,6 +17,7 @@ from collections import defaultdict
 from ..helper import utils, v3
 from ..youtube_exceptions import YouTubeException
 from ...kodion import logging
+from ...kodion.cast_profiles import CastProfileError, CastProfiles, profile_context
 from ...kodion.compatibility import string_type, urlencode, urlunsplit, xbmc
 from ...kodion.constants import (
     BUSY_FLAG,
@@ -53,6 +54,19 @@ from ...kodion.utils.redact import redact_params
 def _play_stream(provider, context):
     ui = context.get_ui()
     params = context.get_params()
+    cast_profile_id = None
+    if 'cast_device' in params:
+        # Resolve before constructing a client or reading profile-specific history.
+        # Clear an abandoned previous playback handoff on cancellation/error.
+        ui.clear_property(PLAYER_DATA)
+        try:
+            cast_profile_id = CastProfiles(context).resolve(
+                params.get('cast_device'), params.get('cast_name'))
+            context = profile_context(context, cast_profile_id)
+            ui = context.get_ui()
+        except CastProfileError:
+            ui.show_notification(context.localize(30992))
+            return False
     video_id = params.get(VIDEO_ID)
     if not video_id:
         ui.show_notification(context.localize('error.no_streams_found'))
@@ -198,6 +212,9 @@ def _play_stream(provider, context):
         'clip': params.get('clip', False),
         'refresh_only': screensaver
     }
+
+    if cast_profile_id:
+        playback_data['profile_id'] = cast_profile_id
 
     ui.set_property(PLAYER_DATA,
                     value=playback_data,

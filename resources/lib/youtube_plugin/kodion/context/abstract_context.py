@@ -152,6 +152,8 @@ class AbstractContext(object):
         ACTION,
         ADDON_ID_PARAM,
         'category_label',
+        'cast_device',
+        'cast_name',
         CHANNEL_ID,
         'client_id',
         'client_secret',

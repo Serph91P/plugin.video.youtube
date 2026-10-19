@@ -36,6 +36,26 @@ msgstr ""
 # msgid "YouTube is a one of the biggest video-sharing websites of the world."
 # msgstr ""
 
+msgctxt "#30990"
+msgid "Choose a YouTube profile for this phone"
+msgstr ""
+
+msgctxt "#30991"
+msgid "Reset TubeCast phone associations"
+msgstr ""
+
+msgctxt "#30992"
+msgid "TubeCast playback stopped: choose an existing signed-in profile. Reset phone associations if needed."
+msgstr ""
+
+msgctxt "#30993"
+msgid "Forget all phone-to-profile associations? Each phone will ask again on its next cast."
+msgstr ""
+
+msgctxt "#30994"
+msgid "TubeCast phone associations reset"
+msgstr ""
+
 # Kodion Settings
 
 msgctxt "#30000"

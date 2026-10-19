@@ -12,6 +12,7 @@ from __future__ import absolute_import, division, unicode_literals
 import os
 
 from . import logging
+from .cast_profiles import CastProfileError, CastProfiles
 from .compatibility import parse_qsl, urlsplit, xbmc, xbmcaddon, xbmcvfs
 from .constants import (
     DATA_PATH,
@@ -396,6 +397,17 @@ def _user_actions(context, action, params):
         ui.show_notification(localize('user.changed_to.x',
                                       access_manager.get_username(user)),
                              localize('user.switch'))
+
+    if action == 'reset_cast':
+        if not ui.on_yes_no_input(localize(30991), localize(30993)):
+            return False
+        try:
+            CastProfiles(context).reset()
+        except CastProfileError:
+            ui.show_notification(localize(30992))
+            return False
+        ui.show_notification(localize(30994))
+        return True
 
     if action == 'switch':
         result, user_index_map = select_user(localize('user.switch'),

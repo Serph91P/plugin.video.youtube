@@ -35,6 +35,26 @@ msgstr "Dieses Plugin ist nicht von Google befürwortet"
 # msgctxt "Addon Description"
 # msgid "YouTube is a one of the biggest video-sharing websites of the world."
 # msgstr ""
+msgctxt "#30990"
+msgid "Choose a YouTube profile for this phone"
+msgstr "YouTube-Profil für dieses Handy auswählen"
+
+msgctxt "#30991"
+msgid "Reset TubeCast phone associations"
+msgstr "TubeCast-Handyzuordnungen zurücksetzen"
+
+msgctxt "#30992"
+msgid "TubeCast playback stopped: choose an existing signed-in profile. Reset phone associations if needed."
+msgstr "TubeCast-Wiedergabe abgebrochen: Ein vorhandenes angemeldetes Profil auswählen. Bei Bedarf die Handyzuordnungen zurücksetzen."
+
+msgctxt "#30993"
+msgid "Forget all phone-to-profile associations? Each phone will ask again on its next cast."
+msgstr "Alle Handy-Profil-Zuordnungen löschen? Jedes Handy fragt beim nächsten Cast erneut nach."
+
+msgctxt "#30994"
+msgid "TubeCast phone associations reset"
+msgstr "TubeCast-Handyzuordnungen zurückgesetzt"
+
 # Kodion Settings
 msgctxt "#30000"
 msgid ""
