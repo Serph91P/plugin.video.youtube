@@ -1,3 +1,7 @@
+## v7.4.4.2
+### Fixed
+- Mark the preferred video stream as default in list-only DASH playback so codec priority does not select a lower-resolution alternative.
+
 ## v7.4.4.1
 ### New
 - Pair TubeCast phones with existing signed-in YouTube profiles for playback and history without changing the globally selected profile.
