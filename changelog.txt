@@ -1,3 +1,7 @@
+## v7.4.4.3
+### Fixed
+- Bind Goto channel menus to each video or playlist channel ID, avoiding an empty /channel/ when transient window properties are unavailable.
+
 ## v7.4.4.2
 ### Fixed
 - Mark the preferred video stream as default in list-only DASH playback so codec priority does not select a lower-resolution alternative.

@@ -535,9 +535,10 @@ def watch_later_local_clear(context):
     )
 
 
-def channel_go_to(context,
-                  channel_id=CHANNEL_ID_INFOLABEL,
-                  channel_name=ARTIST_INFOLABEL):
+def channel_go_to(context, channel_id=None, channel_name=''):
+    # Bind the owning item, not service_runner's asynchronously updated window.
+    if not channel_id:
+        return None
     return (
         context.localize('go_to.x', context.get_ui().bold(channel_name)),
         context_menu_uri(
