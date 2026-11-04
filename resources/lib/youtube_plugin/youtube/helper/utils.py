@@ -456,11 +456,6 @@ def update_playlist_items(provider, context, playlist_id_dict,
         if logged_in and not (in_my_playlists or in_saved_playlists) else
         None
     )
-    cxm_go_to_channel = (
-        menu_items.channel_go_to(context)
-        if not in_my_playlists else
-        None
-    )
     cxm_subscribe_to_channel = (
         menu_items.channel_subscribe_to(context)
         if logged_in and not in_my_playlists else
@@ -600,7 +595,8 @@ def update_playlist_items(provider, context, playlist_id_dict,
             )
             if not (in_my_playlists or in_bookmarks_list) else
             None,
-            cxm_go_to_channel,
+            menu_items.channel_go_to(context, channel_id, channel_name)
+            if not in_my_playlists else None,
             # subscribe to the channel via the playlist item
             cxm_subscribe_to_channel,
             # bookmark channel of the playlist
@@ -733,7 +729,6 @@ def update_video_items(provider, context, video_id_dict,
         watch_later_id,
         'watch_later',
     )
-    cxm_go_to_channel = menu_items.channel_go_to(context)
     cxm_unsubscribe_from_channel = menu_items.channel_unsubscribe_from(
         context,
         channel_id=menu_items.CHANNEL_ID_INFOLABEL,
@@ -1105,7 +1100,9 @@ def update_video_items(provider, context, video_id_dict,
             # got to [CHANNEL] only if we are not directly in the channel
             if context.create_path(PATHS.CHANNEL, channel_id) != path:
                 media_item.channel_id = channel_id
-                context_menu.append(cxm_go_to_channel)
+                context_menu.append(
+                    menu_items.channel_go_to(context, channel_id, channel_name)
+                )
 
             if logged_in:
                 context_menu.append(
