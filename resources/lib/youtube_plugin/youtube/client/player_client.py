@@ -2738,9 +2738,12 @@ class YouTubePlayerClient(YouTubeDataClient):
                         stream['langName'],
                         stream['label'],
                     )).strip()
-                    if stream == main_stream[media_type]:
-                        default = True
-                        role = 'main'
+                # List-only playback still needs an explicit video default.
+                # Otherwise Kodi can prefer a low-resolution codec track over
+                # the best stream selected above (e.g. 144p AV1 over 1080p AVC).
+                if 'auto' not in stream_select and stream == main_stream[media_type]:
+                    default = True
+                    role = 'main'
             else:
                 continue
 
